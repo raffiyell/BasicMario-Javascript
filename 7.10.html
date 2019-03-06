@@ -1,0 +1,400 @@
+<head>
+	<title>Turtle Attack!</title>
+	<meta charset="UTF-8">
+</head>
+<body>
+<br>
+<canvas id="myCanvas" width="1000" height="800" style="border:1px solid #cccccc;"></canvas>
+
+<script type="text/javascript">
+
+
+class Sprite
+{
+	constructor(x, y,w,h,image_url, update_method, type, m)
+	{
+		this.model=m;
+		this.x = x;
+		this.y = y;
+		this.h = h;
+		this.w = w;
+		this.type=type;						//1=brick, 2=coinbrick, 3= coin, 4=mario
+		this.image = new Image();
+		this.image.src = image_url;
+		this.update = update_method;
+		this.accelerate=0;
+		this.beforeX=0;
+		this.beforeY=0;
+		this.addcoin=false;
+		this.jumpOnce=false;
+		this.coinsLeft=5;
+		let timeInAir=0;
+	//	let scrollPos=0;
+		this.rndm=Math.floor((Math.random() * 14) + 1);
+		
+	}
+
+	set_destination(x, y)
+	{
+		this.dest_x = x;
+		this.dest_y = y;
+	}
+
+	move(dx, dy)
+	{
+		this.x = this.x + dx;
+		this.y = this.y + dy;
+	}
+
+	marioUpdate()
+	{
+	// this.scrollPos=this.x;
+	//console.log("accelerate2: " +this.accelerate);
+	
+	if (this.y>=555)
+		{
+			this.y=555;														// mario stays on ground and not fall
+			this.accelerate=0;
+			this.timeInAir=0;
+			this.jumpOnce=true;
+
+		}
+		else 
+		{
+			this.accelerate=this.accelerate+2;
+			this.y=this.accelerate+this.y;
+		}
+		this.timeInAir++;
+	//	console.log(this.x);
+	//	console.log(this.model.mario.x);
+	//	console.log(this.y);
+	//	console.log(this.model.mario.y);
+	this.Collision();
+
+	}
+	
+	beforePos()
+	{
+	this.beforeX=this.model.mario.x;
+	this.beforeY=this.model.mario.y;
+	}
+	
+	Collision()
+	{
+	for(let i = 0; i < this.model.sprites.length; i++)
+	{
+		let b=this.model.sprites[i];
+				//console.log(b.x);
+				//console.log(b.w);
+				
+		if (b.type==1||b.type==3||b.type==2)
+		
+		{
+				
+				//console.log("y: " + this.model.mario.y);
+				//console.log("beforey: " + this.model.mario.beforeY);
+				//console.log(this.model.mario.timeInAir);
+				//console.log(b.w);
+			
+			if(	this.model.mario.x< b.x + b.w &&									//right side of box
+				this.model.mario.x +b.w > b.x &&								// left side of box
+				this.model.mario.y < b.y + b.h &&								// bottom side of box
+				this.model.mario.y+ b.h > b.y)								// up side of box
+			{
+
+			//	if (b.checkIfBlock==false)
+				{
+						//System.out.println("testing collision"); 
+					if (this.model.mario.x < b.x + b.w && this.model.mario.beforeX >= b.x + b.w )
+						{
+						this.model.mario.x=b.x+b.w;
+							//System.out.println("hitting right side");
+							console.log("hitting right side: ");
+						//	console.log(this.model.mario.x);
+						} 
+					else if (this.model.mario.x+this.model.mario.w > b.x  &&  this.model.mario.beforeX +this.model.mario.w <= b.x)
+						{
+					this.model.mario.x=b.x-this.model.mario.w;
+							//System.out.println("hitting left side");
+							console.log("hitting left side");
+						}
+					else if (this.model.mario.y < b.y + b.h  &&  this.model.mario.beforeY > b.y + b.h )
+						{	//rndm++;								// <--------rndm will be used in Coin class
+							//System.out.println("hitting bottom side");
+							console.log("hitting bottom side");
+							this.jumpOnce=false;
+							this.model.mario.y= b.y+b.h+2;
+							this.model.mario.accelerate=10;
+							if (b.coinsLeft==0)					//	<--------if there's no coin left, disable a
+							{
+								b.addcoin=false;
+							}
+							else if (this.model.mario.timeInAir>1)
+							{
+								b.addcoin=true;					//<---------if there are still coins left, coinblock update will
+								b.coinsLeft--;					//		  call addcoin from model. Also coinsLeft will decrement
+							
+							}
+							
+						}
+					else if (this.model.mario.y+ this.model.mario.h > b.y && this.model.mario.beforeY  + this.model.mario.h <= b.y)
+						{
+						console.log("hitting top side");
+						this.jumpOnce=true;
+						//System.out.println("hitting top side");
+						this.model.mario.y= b.y-this.model.mario.h-1 ;
+							this.model.mario.accelerate=0;
+							this.timeInAir=0;
+							//console.log("accelerate: " +this.accelerate);
+							//console.log("y: " + this.model.mario.y);
+						}
+				}
+				}
+			else
+			{
+				//System.out.println("no collision");								
+			}
+		}
+		}
+	}
+	sit_still()
+	{
+	}
+	coinblockUpdate()
+	{
+		if (this.addcoin==true)
+		{
+		this.model.sprites.push(new Sprite(this.x,this.y,this.w,this.h, "coin.png", Sprite.prototype.coinUpdate, 3, this));
+		this.addcoin=false;
+		}
+	}
+	coinUpdate()
+	{
+		this.y=this.y-25;					// coin jump up
+		this.accelerate+=2;					//coin fall down
+		this.y+=this.accelerate;			//fall down
+	
+	if (this.rndm%2==0)											//<----------this will make the coins shoot in random
+																//		amount of x values from right and left direction
+		{
+			this.x+=this.rndm;
+		}
+		
+		else
+		{
+			this.x-=this.rndm;
+		}
+	
+	}
+
+
+}
+
+
+
+
+
+
+class Model
+{
+	constructor()
+	{
+		this.sprites = [];
+		this.mario = new Sprite(0,0,60, 95, "mario1.png", Sprite.prototype.marioUpdate,4, this);
+		this.sprites.push(this.mario);
+		this.sprites.push(new Sprite(450, 300,80,80, "brick.png", Sprite.prototype.sit_still,  1, this));
+		this.sprites.push(new Sprite(780, 200,80,315, "brick.png", Sprite.prototype.sit_still, 1, this));
+		this.sprites.push(new Sprite(450, 370,80,80, "brick.png", Sprite.prototype.sit_still, 1, this));
+		this.sprites.push(new Sprite(1013, 320,200,100, "brick.png", Sprite.prototype.sit_still, 1, this));
+		this.sprites.push(new Sprite(100, 100,80,80, "brick.png", Sprite.prototype.sit_still, 1, this));
+		this.sprites.push(new Sprite(150, 300,80,80, "block1.png", Sprite.prototype.coinblockUpdate, 2, this));
+		this.sprites.push(new Sprite(650, 300,80,80, "block1.png", Sprite.prototype.coinblockUpdate, 2, this));
+		this.sprites.push(new Sprite(870, 350,80,80, "block1.png", Sprite.prototype.coinblockUpdate,  2, this));
+
+		
+		
+		//this.mario= new Mario(x,y);
+		//this.sprites.push(this.mario);
+		let scrollpos= 0;
+	}
+	update()
+	{
+	this.scrollpos=this.mario.x;
+		for(let i = 0; i < this.sprites.length; i++)
+		{
+			this.sprites[i].update();
+		}
+	}
+
+	onclick(x, y)
+	{
+		for(let i = 0; i < this.sprites.length; i++)
+		{
+			this.sprites[i].onclick(x, y);
+		}
+	}
+
+	move(dx, dy)
+	{
+		this.mario.move(dx, dy);
+	}
+}
+
+
+
+
+class View
+{
+	constructor(model)
+	{
+		this.model = model;
+		this.canvas = document.getElementById("myCanvas");
+	
+		this.mario2 = new Image();
+		this.mario3 = new Image();
+		this.mario4 = new Image();
+		this.mario5 = new Image();
+		this.mario1 = new Image();
+		this.coinblock1= new Image();
+		this.coinblock2= new Image();
+		this.wallpaper= new Image();
+		this.ground= new Image();
+		this.coinblock1.src= "block1.png";
+		this.coinblock2.src= "block2.png";
+		this.mario1.src = "mario1.png";
+		this.mario2.src = "mario2.png";
+		this.mario3.src = "mario3.png";
+		this.mario4.src = "mario4.png";
+		this.mario5.src = "mario5.png";
+		this.wallpaper.src="wallpaper.png";
+		this.ground.src= "brickroad.png";
+		
+	}
+
+	update()
+	{
+		let ctx = this.canvas.getContext("2d");
+		ctx.clearRect(0, 0, 1000, 800);
+		ctx.drawImage(this.wallpaper,0-(this.model.scrollpos/2),0,2000,800);
+		ctx.drawImage(this.ground,0-(this.model.scrollpos/2),650,1000,800);
+		ctx.drawImage(this.ground,1000-(this.model.scrollpos/2),650,1000,800);
+		for(let i = 0; i < this.model.sprites.length; i++)
+		{
+			let sprite = this.model.sprites[i];
+			if (sprite.type==4)				//4=mario
+				{
+				this.count=Math.abs(this.model.scrollpos % 4)
+				if 	(this.count==0)
+					ctx.drawImage(this.mario5, sprite.x-this.model.scrollpos+150, sprite.y, sprite.w, sprite.h);
+				else if (this.count==1)
+					ctx.drawImage(this.mario4, sprite.x-this.model.scrollpos+150, sprite.y, sprite.w, sprite.h);
+				else if (this.count==2)
+					ctx.drawImage(this.mario3, sprite.x-this.model.scrollpos+150, sprite.y, sprite.w, sprite.h);
+				else if (this.count==3)
+					ctx.drawImage(this.mario2, sprite.x-this.model.scrollpos+150, sprite.y, sprite.w, sprite.h);
+				else if (this.count==4)
+					ctx.drawImage(this.mario1, sprite.x-this.model.scrollpos+150, sprite.y, sprite.w, sprite.h);
+				}
+			else if (sprite.type==2)	//2= coinblock
+				if (sprite.coinsLeft<=0)
+				ctx.drawImage(this.coinblock2, sprite.x-this.model.scrollpos+150, sprite.y, sprite.w, sprite.h);
+				else
+				ctx.drawImage(this.coinblock1, sprite.x-this.model.scrollpos+150, sprite.y, sprite.w, sprite.h);
+			else 
+				ctx.drawImage(sprite.image, sprite.x-this.model.scrollpos+150, sprite.y, sprite.w, sprite.h);
+			
+		}
+		
+	}
+}
+
+
+
+
+
+
+
+class Controller
+{
+	constructor(model, view)
+	{
+
+		this.model = model;
+		this.view = view;
+		this.key_right = false;
+		this.key_left = false;
+		this.key_up = false;
+		this.key_down = false;
+		let self = this;
+		view.canvas.addEventListener("click", function(event) { self.onClick(event); });
+		document.addEventListener('keydown', function(event) { self.keyDown(event); }, false);
+		document.addEventListener('keyup', function(event) { self.keyUp(event); }, false);
+	}
+
+	onClick(event)
+	{
+		this.model.onclick(event.pageX - this.view.canvas.offsetLeft, event.pageY - this.view.canvas.offsetTop);
+	}
+
+	keyDown(event)
+	{
+		if(event.keyCode == 39) this.key_right = true;
+		else if(event.keyCode == 37) this.key_left = true;
+		else if(event.keyCode == 38) this.key_up = true;
+		else if(event.keyCode == 40) this.key_down = true;
+		else if(event.keyCode == 32) this.key_space= true;
+	}
+
+
+	keyUp(event)
+	{
+		if(event.keyCode == 39) this.key_right = false;
+		else if(event.keyCode == 37) this.key_left = false;
+		else if(event.keyCode == 38) this.key_up = false;
+		else if(event.keyCode == 40) this.key_down = false;
+		else if(event.keyCode == 32) this.key_space= false;
+	}
+
+	update()
+	{	
+		let dx = 0;
+		let dy = 0;
+		this.model.mario.beforePos();
+		if(this.key_right) dx+=15;
+		if(this.key_left) dx-=15;
+		if(this.key_space==true&& this.model.mario.jumpOnce==true) dy-=35;
+		if(this.key_down) dy++;
+
+		if(dx != 0 || dy != 0)
+			this.model.move(dx, dy);
+	}
+}
+
+
+
+
+
+class Game
+{
+	constructor()
+	{
+		this.model = new Model();
+		this.view = new View(this.model);
+		this.controller = new Controller(this.model, this.view);
+	}
+
+	onTimer()
+	{
+		this.controller.update();
+		this.model.update();
+		this.view.update();
+	}
+}
+
+
+let game = new Game();
+let timer = setInterval(function() { game.onTimer(); }, 50);
+
+</script>
+
+</body>
